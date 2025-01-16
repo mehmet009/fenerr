@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fenerbahçe Bilgi Yarışması</title>
+    <style>
+        /* CSS kodları aynı */
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to right, #f7d000 50%, #002d72 50%);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .quiz-container {
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            width: 90%;
+            max-width: 800px;
+            text-align: center;
+            color: #fff;
+        }
+        .options button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 5px;
+            background-color: #fff;
+            color: #002d72;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .options button.correct {
+            background-color: #28a745;
+            color: #fff;
+        }
+        .options button.wrong {
+            background-color: #dc3545;
+            color: #fff;
+        }
+        button#next-btn, button#prev-btn {
+            background-color: #f7d000;
+            color: #002d72;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            transition: background-color 0.3s ease;
+        }
+        button#next-btn:hover, button#prev-btn:hover {
+            background-color: #002d72;
+            color: #f7d000;
+        }
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: #fff;
+            color: #002d72;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        }
+        .modal-content button {
+            padding: 15px 30px;
+            margin: 10px;
+            font-size: 18px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .modal-content button:hover {
+            background-color: #002d72;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div id="team-modal" class="modal">
+        <div class="modal-content">
+            <h2>Hangi takımı tutuyorsunuz?</h2>
+            <button onclick="selectTeam('Fenerbahçe')" style="background-color: #f7d000; color: #002d72;">Fenerbahçe</button>
+            <button onclick="selectTeam('Other')" style="background-color: #ccc; color: #333;">Diğer</button>
+        </div>
+    </div>
+
+    <div class="quiz-container" style="display:none;">
+        <h1 id="question">Fenerbahçe Bilgi Yarışması</h1>
+        <div id="options" class="options"></div>
+        <div>
+            <button id="prev-btn" onclick="navigateQuestion(-1)">Geri</button>
+            <button id="next-btn" onclick="navigateQuestion(1)">İleri</button>
+        </div>
+    </div>
+
+    <div id="result-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Sonuçlarınız</h2>
+            <p id="score"></p>
+            <p id="comment"></p>
+            <button onclick="restartQuiz()">Tekrar Dene</button>
+        </div>
+    </div>
+
+    <script>
+        const quizData = [
+        { "question": "Fenerbahçe Spor Kulübü hangi yıl kurulmuştur?", "options": ["1905", "1907", "1910", "1912"], "answer": "1907" },
+  { "question": "Fenerbahçe'nin ilk kurucu başkanı kimdir?", "options": ["Ziya Songülen", "Ali Şen", "Azmi Müftüoğlu", "Şekip Mosturoğlu"], "answer": "Ziya Songülen" },
+  { "question": "Fenerbahçe’nin “Kadıköy Boğası” lakaplı efsane oyuncusu kimdir?", "options": ["Lefter Küçükandonyadis", "Can Bartu", "Alex de Souza", "Selçuk Yula"], "answer": "Lefter Küçükandonyadis" },
+  { "question": "Fenerbahçe’nin ezeli rakibi hangi takımdır?", "options": ["Beşiktaş", "Galatasaray", "Trabzonspor", "Bursaspor"], "answer": "Galatasaray" },
+  { "question": "Alex de Souza, Fenerbahçe formasıyla toplam kaç gol atmıştır?", "options": ["140", "151", "171", "200"], "answer": "171" },
+  { "question": "Fenerbahçe’nin basketbol takımının Avrupa Şampiyonu olduğu yıl hangisidir?", "options": ["2016", "2017", "2018", "2019"], "answer": "2017" },
+  { "question": "Fenerbahçe’nin taraftar grubu hangi isimle bilinir?", "options": ["Ultraslan", "Çarşı", "Genç Fenerbahçeliler", "Teksas"], "answer": "Genç Fenerbahçeliler" },
+  { "question": "Can Bartu’nun lakabı nedir?", "options": ["Sinyor", "Kral", "Paşa", "İmparator"], "answer": "Sinyor" },
+  { "question": "Fenerbahçe’nin stadı olan Şükrü Saracoğlu, hangi ilçededir?", "options": ["Beşiktaş", "Kadıköy", "Üsküdar", "Kartal"], "answer": "Kadıköy" },
+  { "question": "Fenerbahçe formasıyla en çok gol atan futbolcu kimdir?", "options": ["Alex de Souza", "Lefter Küçükandonyadis", "Tanju Çolak", "Zeki Rıza Sporel"], "answer": "Zeki Rıza Sporel" },
+  { "question": "2014 yılında Fenerbahçe’ye başkan olan kişi kimdir?", "options": ["Aziz Yıldırım", "Ali Koç", "Tahsin Kaya", "Nihat Özdemir"], "answer": "Aziz Yıldırım" },
+  { "question": "Fenerbahçe'nin ilk Avrupa başarısı hangi turnuvada gelmiştir?", "options": ["UEFA Şampiyonlar Ligi", "Kupa Galipleri Kupası", "Balkan Kupası", "UEFA Avrupa Ligi"], "answer": "Balkan Kupası" },
+  { "question": "Fenerbahçe'nin Avrupa'daki en büyük galibiyeti hangi takıma karşıdır?", "options": ["Manchester United", "Sevilla", "Monaco", "MTK Budapeşte"], "answer": "MTK Budapeşte" },
+  { "question": "Alex de Souza’nın forma numarası neydi?", "options": ["10", "7", "8", "5"], "answer": "10" },
+  { "question": "Fenerbahçe’nin kulüp renkleri nedir?", "options": ["Turuncu-Kırmızı", "Sarı-Lacivert", "Siyah-Beyaz", "Yeşil-Beyaz"], "answer": "Sarı-Lacivert" },
+  { "question": "Fenerbahçe'nin 100. yıl şampiyonluğu hangi yılda olmuştur?", "options": ["2005-2006", "2006-2007", "2007-2008", "2008-2009"], "answer": "2006-2007" },
+  { "question": "Fenerbahçe'nin Avrupa kupalarında en çok gol atan oyuncusu kimdir?", "options": ["Alex de Souza", "Pierre van Hooijdonk", "Dirk Kuyt", "Tuncay Şanlı"], "answer": "Tuncay Şanlı" },
+  { "question": "Fenerbahçe'nin logosundaki palamut yaprağı neyi simgeler?", "options": ["Gücü ve sağlamlığı", "Zaferi ve başarıyı", "Sevgi ve barışı", "Dayanışmayı"], "answer": "Gücü ve sağlamlığı" },
+  { "question": "Lefter Küçükandonyadis’in formasında yer alan unutulmaz numarası nedir?", "options": ["8", "10", "11", "7"], "answer": "10" },
+  { "question": "Fenerbahçe’nin en uzun süre başkanlık yapmış ismi kimdir?", "options": ["Aziz Yıldırım", "Ali Şen", "Şükrü Saracoğlu", "Nihat Özdemir"], "answer": "Aziz Yıldırım" },
+  { "question": "Hangi futbolcu Fenerbahçe formasıyla hem Galatasaray hem de Beşiktaş’a aynı sezonda hat-trick yapmıştır?", "options": ["Aykut Kocaman", "Tanju Çolak", "Serhat Akın", "Semih Şentürk"], "answer": "Aykut Kocaman" },
+  { "question": "Fenerbahçe'nin futbol tarihindeki ilk yabancı oyuncusu kimdir?", "options": ["Valdir Pereira", "Carlos Alberto", "Oscar Gijzels", "Hans Peter Briegel"], "answer": "Oscar Gijzels" },
+  { "question": "Fenerbahçe'nin tarihindeki ilk yabancı teknik direktörü kimdir?", "options": ["Didi", "Stanko Poklepović", "Friedrich Donenfeld", "Tomislav Kaloperović"], "answer": "Friedrich Donenfeld" },
+  { "question": "Fenerbahçe'nin 2006-2007 sezonunda 100. yıl kadrosundaki teknik direktör kimdir?", "options": ["Daum", "Zico", "Aykut Kocaman", "Christoph Daum"], "answer": "Zico" },
+  { "question": "Fenerbahçe formasıyla 103 gol atan ve 1994-95 sezonunda rekor kıran oyuncu kimdir?", "options": ["Hakan Şükür", "Aykut Kocaman", "Tanju Çolak", "Oğuz Çetin"], "answer": "Tanju Çolak" },
+  { "question": "Fenerbahçe’nin en fazla forma giyen oyuncusu kimdir?", "options": ["Volkan Demirel", "Rüştü Reçber", "Lefter Küçükandonyadis", "Can Bartu"], "answer": "Volkan Demirel" },
+  { "question": "Fenerbahçe'nin 'Hedef 1 Milyon Üye' projesi hangi başkan döneminde başlatılmıştır?", "options": ["Ali Koç", "Aziz Yıldırım", "Ali Şen", "Tahsin Kaya"], "answer": "Aziz Yıldırım" },
+  { "question": "Fenerbahçe’nin 28 yıl formasını giyen kalecisi kimdir?", "options": ["Volkan Demirel", "Cihat Arman", "Rüştü Reçber", "Yaşar Duran"], "answer": "Cihat Arman" },
+  { "question": "Şükrü Saracoğlu Stadı'nın eski adı nedir?", "options": ["Fenerbahçe Stadı", "Kadıköy Stadyumu", "Papazın Çayırı", "Ülker Arena"], "answer": "Papazın Çayırı" },
+  { "question": "Fenerbahçe'nin 100. golünü atan futbolcu kimdir?", "options": ["Alex", "Turhan Sofuoğlu", "Tuncay Şanlı", "Semih Şentürk", "Lugano"], "answer": "Turhan Sofuoğlu" },
+  { "question": "Fenerbahçe'nin profesyonel şubelerinden biri olmayan spor dalı hangisidir?", "options": ["Voleybol", "Atletizm", "Rugby", "Boks"], "answer": "Rugby" },
+  { "question": "Fenerbahçe'nin 2010-2011 sezonundaki şampiyonluk maçında hangi oyuncu şampiyonluk golünü atmıştır?", "options": ["Emre Belözoğlu", "Alex de Souza", "Niang", "Selçuk Şahin"], "answer": "Alex de Souza" },
+  { "question": "Fenerbahçe tarihinde Avrupa'da en fazla maça çıkan teknik direktör kimdir?", "options": ["Zico", "Aykut Kocaman", "Christoph Daum", "Luis Aragones"], "answer": "Aykut Kocaman" },
+  { "question": "Fenerbahçe'nin renkleri neden sarı-laciverttir?", "options": ["Sarı güneşi, lacivert ise denizi simgeler.", "Sarı sıcaklığı, lacivert sadakati simgeler.", "Renkler, Ziya Songülen'in seçimiyle belirlenmiştir.", "İstanbul'un iki yakasını simgeler."], "answer": "Sarı güneşi, lacivert ise denizi simgeler." },
+  { "question": "Fenerbahçe'nin UEFA Şampiyonlar Ligi'nde çeyrek finale yükseldiği sezon hangisidir?", "options": ["2005-2006", "2007-2008", "2009-2010", "2012-2013"], "answer": "2007-2008" },
+  { "question": "Fenerbahçe'nin tarihinde UEFA Avrupa Ligi yarı finali oynadığı yıl hangisidir?", "options": ["2009-2010", "2012-2013", "2015-2016", "2018-2019"], "answer": "2012-2013" },
+  { "question": "Fenerbahçe’nin altyapısından yetişen ve Avrupa’ya transfer olan ilk oyuncu kimdir?", "options": ["Can Bartu", "Tuncay Şanlı", "Rıdvan Dilmen", "Alpay Özalan"], "answer": "Can Bartu" },
+  { "question": "Fenerbahçe’nin en farklı galibiyeti hangi skordur?", "options": ["10-0", "11-1", "12-0", "13-0"], "answer": "13-0" },
+  { "question": "Fenerbahçe Spor Kulübü’nün ilk resmi tesisleri hangi semtte açılmıştır?", "options": ["Kadıköy", "Üsküdar", "Moda", "Erenköy"], "answer": "Moda" },
+  { "question": "Fenerbahçe'nin en fazla lig şampiyonluğu kazandığı teknik direktör kimdir?", "options": ["Aykut Kocaman", "Christoph Daum", "Todor Veselinovic", "Zico"], "answer": "Christoph Daum" },
+  { "question": "Fenerbahçe tarihinde futbol dışındaki ilk şampiyonluğu hangi branşta kazanmıştır?", "options": ["Voleybol", "Yüzme", "Atletizm", "Boks"], "answer": "Atletizm" },
+  { "question": "Fenerbahçe'nin Avrupa kupalarında en farklı galibiyeti hangi takıma karşıdır?", "options": ["Manchester United", "Budapest Honvéd", "Lyn Oslo", "Skonto Riga"], "answer": "Lyn Oslo" },
+  { "question": "Fenerbahçe'nin ilk yabancı başkanı kimdir?", "options": ["Ali Şen", "Aziz Yıldırım", "Nihat Özdemir", "Hiçbiri:D"], "answer": "Hiçbiri:D" },
+  { "question": "Fenerbahçe’nin voleybol takımı hangi isimle anılır?", "options": ["Filede Fırtına", "Sarı Melekler", "Altın Kanaryalar", "Sarı Kaplanlar"], "answer": "Sarı Melekler" }
+
+        ];
+
+        let currentQuestionIndex = 0;
+        let correctAnswers = 0;
+
+        function selectTeam(team) {
+            if (team !== 'Fenerbahçe') {
+                alert('Bu yarışmaya sadece Fenerbahçeliler katılabilir.');
+                window.close();
+            } else {
+                document.getElementById('team-modal').style.display = 'none';
+                document.querySelector('.quiz-container').style.display = 'block';
+                loadQuestion();
+            }
+        }
+
+        function loadQuestion() {
+            const currentData = quizData[currentQuestionIndex];
+            document.getElementById('question').textContent = `${currentQuestionIndex + 1}. ${currentData.question}`;
+            const optionsDiv = document.getElementById('options');
+            optionsDiv.innerHTML = '';
+
+            currentData.options.forEach(option => {
+                const button = document.createElement('button');
+                button.textContent = option;
+                button.onclick = () => checkAnswer(button, currentData.answer);
+                optionsDiv.appendChild(button);
+            });
+        }
+
+        function checkAnswer(button, correctAnswer) {
+            if (button.textContent === correctAnswer) {
+                button.classList.add('correct');
+                correctAnswers++;
+            } else {
+                button.classList.add('wrong');
+            }
+            document.querySelectorAll('.options button').forEach(btn => btn.disabled = true);
+        }
+
+        function navigateQuestion(direction) {
+            currentQuestionIndex += direction;
+            if (currentQuestionIndex < 0) currentQuestionIndex = 0;
+            if (currentQuestionIndex >= quizData.length) {
+                showResults();
+            } else {
+                loadQuestion();
+            }
+        }
+
+        function showResults() {
+            document.querySelector('.quiz-container').style.display = 'none';
+            document.getElementById('result-modal').style.display = 'flex';
+            const scoreText = `Doğru Cevaplar: ${correctAnswers}/${quizData.length}`;
+            let comment = '';
+
+            if (correctAnswers === quizData.length) {
+                comment = 'Mükemmel! Sen tam bir Fenerbahçe ansiklopedisisin!';
+            } else if (correctAnswers > quizData.length / 2) {
+                comment = 'Gayet iyi! Ama birkaç detayı kaçırmışsın.';
+            } else {
+                comment = 'Sanırım başka bir takımın taraftarısın, doğru mu? 😅';
+            }
+
+            document.getElementById('score').textContent = scoreText;
+            document.getElementById('comment').textContent = comment;
+        }
+
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            correctAnswers = 0;
+            document.getElementById('result-modal').style.display = 'none';
+            document.querySelector('.quiz-container').style.display = 'block';
+            loadQuestion();
+        }
+       
+    function checkAnswer(button, correctAnswer) {
+        if (button.textContent === correctAnswer) {
+            button.classList.add('correct');
+            correctAnswers++;
+        } else {
+            button.classList.add('wrong');
+            // Doğru cevabı otomatik vurgula
+            document.querySelectorAll('.options button').forEach(btn => {
+                if (btn.textContent === correctAnswer) {
+                    btn.classList.add('correct');
+                }
+            });
+        }
+        document.querySelectorAll('.options button').forEach(btn => btn.disabled = true);
+    }
+
+    </script>
+</body>
+</html>
